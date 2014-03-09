@@ -1,0 +1,169 @@
+#!/bin/bash
+#
+# Adds "state" command to prepend state strings to commits
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# #
+
+gitdir=$( git rev-parse --git-dir 2>/dev/null )
+msgpath="$gitdir/COMMIT_EDITMSG_PREFIX"
+
+if [ -z "$gitdir" ]; then
+  echo "fatal: Not in a git repository" >&2
+  exit 1
+fi
+
+branch=$( git symbolic-ref HEAD 2>/dev/null )
+branch=${branch#refs/heads/}
+if [ -z "$branch" ]; then
+  echo "fatal: Not currently on any branch" >&2
+  exit 1
+fi
+
+
+##
+# Stores current state for current branch and removes any associated stale
+# states (providing one historical state for the branch)
+##
+_clearmsg()
+{
+  local bname="${branch//\//\/}"
+
+  # remove stale branch state and mark current branch state as previous (which
+  # will be removed next time the state is set for this branch again)
+  [ -f "$msgpath" ] && \
+      sed -i "/^-$bname/d;s/^$bname/-&/" "$msgpath"
+}
+
+
+##
+# Retrieve the current state message for the current branch, or an alternate
+# state as specified by an optional prefix
+_getmsg()
+{
+  local pre="$1"
+  grep "^${pre}$branch" "$msgpath" 2>/dev/null \
+    | cut -d' ' -f2-
+}
+
+
+##
+# Initialize the prepare-commit-msg hook
+#
+# If it does not exist, one will be created. Otherwise, the actions will be
+# appended to the existing hook to ensure that the process can be properly
+# terminated by any existing hook.
+##
+_hookinit()
+{
+  local hookpath="$gitdir/hooks/prepare-commit-msg"
+  local hookflag="$gitdir/hooks/.stateinit"
+
+  # do nothing if we've already initialized the hook
+  if [ -e "$hookflag" ]; then
+    return 0;
+  fi
+
+  # if the hook does not yet exist, create it
+  if [ ! -f "$hookpath" ]; then
+    echo '#!/bin/bash' > "$hookpath" \
+      && chmod +x "$hookpath" \
+      || return 1
+  fi
+
+  # append our hook code to prepend the state string to each commit (if one is
+  # set for the current branch)
+  cat - >> "$hookpath" <<'EOF'
+
+#
+# added automatically by git-state
+#
+branch=$( git symbolic-ref HEAD 2>/dev/null )
+branch=${branch#refs/heads/}
+
+msg=$( cat "$1" )
+prefix=$( git state | tr -d '\n' )
+dl=$( git config state.delim.left || echo '[' )
+dr=$( git config state.delim.right || echo ']' )
+statemsg="$dl$prefix$dr "
+
+# do not include statemsg if it's already found in the message
+grep -qoF "$statemsg" <<< "$msg" && statemsg=""
+
+if [ -n "$prefix" ]; then
+    echo "$statemsg$msg" > "$1"
+fi
+EOF
+
+  # if the append failed, we cannot continue
+  test $? -gt 0 && return 1
+
+  # prevent us from initializing again in the future
+  touch "$hookflag"
+}
+
+
+# parse options (with long option support)
+while getopts ":-:" opt; do
+  case "$opt" in
+    -)
+      # parse --long options
+      case "$OPTARG" in
+        clear)
+          _clearmsg
+          exit
+          ;;
+
+        *)
+          echo "fatal: Unknown option: $OPTARG" >&2
+          exit 64 # EX_USAGE
+          ;;
+      esac;;
+
+    ?)
+      echo "fatal: Unknown option: $OPTARG" >&2
+      exit 64 # EX_USAGE
+      ;;
+  esac
+done
+
+# attempt to initialize the hook
+_hookinit || {
+  echo "fatal: Could not initialize prepare-commit-msg hook" >&2
+  exit 1
+}
+
+# if no message was provided, simply output the current value
+if [ -z "$*" ]; then
+  statemsg=$( _getmsg )
+
+  # output state message and exit with 0 status if state message is set
+  if [ -n "$statemsg" ]; then
+    echo "$statemsg"
+    exit
+  fi
+
+  # no state message; exit with non-zero status to indicate absence
+  exit 1
+fi
+
+# the message will be, by default, the remainder of our arguments; dash will
+# indicate that the previous state should be used in place of the message
+msg="$@"
+[ "$msg" == '-' ] && msg=$( _getmsg - )
+
+# clear the previous message and set the new
+_clearmsg
+echo "$branch $msg" >> "$msgpath"
+

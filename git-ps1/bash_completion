@@ -1,0 +1,119 @@
+#!/bin/bash
+#
+# Provides short mappings for common Git commands
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# #
+
+
+_git_state ()
+{
+  _get_comp_words_by_ref -n =: cur
+
+  case "$cur" in
+    --*)
+      __gitcomp "--clear";;
+  esac
+}
+
+# override their config function to provide our own options
+eval "$( echo '_prev_git_config ()'; declare -f _git_config | tail -n +2 )"
+_git_config ()
+{
+  _prev_git_config
+
+  _get_comp_words_by_ref -n =: cur prev
+
+  # add our configuration options
+  COMPREPLY=( ${COMPREPLY[@]-} state.delim.left state.delim.right )
+}
+
+
+__git-supp_docomplete ()
+{
+  # ignore problem commands
+  grep -q '^-' <<< "$1" && return
+
+  complete -o bashdefault -o default -o nospace -F $2 $1 2>/dev/null \
+    || complete -o default -o nospace -F $2 $1
+}
+
+__git-supp_shortmap ()
+{
+  # only perform completion when within a git dir
+  __gitdir >/dev/null || return $?
+
+  # execute the associated completion function (column two of the shortmaps
+  # file)
+  $( awk "/^$1 / { print \$2 }" <<< "$__git_supp_maps" )
+}
+
+__git-supp_register_alias ()
+{
+  # ignore invalid aliases (for which we define functions to handle them
+  # instead)
+  grep -q '^-' <<< "$1" && return
+
+  alias $1="__git-supp_shortalias $1"
+}
+
+__git-supp_shortalias ()
+{
+  shortcmd=$1
+  shift
+
+  # if we're not within a git dir, fall back to an actual command of this name
+  __gitdir >/dev/null || {
+    " $shortcmd $@"
+    return $?
+  }
+
+  # execute the command
+  cmd="$( grep "^$shortcmd " <<< "$__git_supp_maps" | cut -d' ' -f3- )"
+  if [ -z "$cmd" ]; then
+    return
+  elif [ "$( grep '^|' <<< "$cmd")" ]; then
+    eval "$( sed 's/^|//' <<< "$cmd" ) $@"
+    return $?
+  fi
+
+  $cmd "$@"
+}
+
+# functions that cannot be aliased
+- () { __git-supp_shortalias - "$@"; }
+-- () { __git-supp_shortalias -- "$@"; }
+
+# load shortmaps from cwd (or provided path) and home dir (if available)
+__git_supp_maps=$(
+  cat ${1:-./shortmaps} ~/.git-supp-shortmaps 2>/dev/null \
+    | sed 's/^\([^ ]\+ [^ ]\+\) :/\1 git /'
+)
+
+oldifs="$IFS"
+
+# register each shortmap
+IFS=$'\n'
+for line in $__git_supp_maps; do
+  IFS=$' '
+  set -- $line
+
+  [ -z "$1" ] && continue
+
+  __git-supp_docomplete "$1" __git-supp_shortmap
+  __git-supp_register_alias "$1"
+done
+
+IFS="$oldifs"
+

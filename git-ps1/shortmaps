@@ -1,0 +1,25 @@
+a _git_add :add
+A _git_add :add -A
+B _git_bisect :bisect
+Bs _git_bisect :bisect start
+Bg _git_bisect :bisect good
+Bb _git_bisect :bisect bad
+Br _git_bisect :bisect reset
+c _git_commit :commit
+C _git_commit :commit -am
+co _git_checkout :checkout
+d _git_diff :diff
+f _git_fetch :fetch
+m _git_merge :merge
+p _git_push :push
+P _git_pull :pull
+R __git_rebase :rebase
+Ri _git_rebase :rebase --interactive
+Ra _git_rebase :rebase --abort
+Rc _git_rebase :rebase --continue
+s : :status
+S _git_stash :stash
+t : tig
+T _git_tag :tag
+- : :checkout -
+-- : |cd "$( git rev-parse --git-dir 2>/dev/null )/../"
