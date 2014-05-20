@@ -1,4 +1,4 @@
-git-plus
+Git Plus
 ========
 
 > Configure git automatically.
