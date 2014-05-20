@@ -9,8 +9,5 @@
     df = diff
     co = checkout
     br = branch
-[user]
-    name = liuxd
-    email = liuxidong1984@gmail.com
 [core]
     excludesfile = ~/.gitignore
