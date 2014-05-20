@@ -9,4 +9,4 @@ cp -r git-ps1 ~/
 
 #configure
 cat .bash_profile >> ~/.bash_profile
-cat .bashrc >> ~/.bashrc
+cat .bash_profile >> ~/.bashrc
