@@ -1,12 +1,16 @@
 #!/bin/bash
 
-#copy
 cp .git-completion.bash ~/
 cp .git_aliases ~/
 cp .gitconfig ~/
 cp .gitignore ~/
 cp -r git-ps1 ~/
 
-#configure
-cat .bash_profile >> ~/.bash_profile
-cat .bash_profile >> ~/.bashrc
+if [ $SHELL = "/bin/zsh" ]
+then
+    cp .zshrc_git ~/
+    echo "source ~/.zshrc_git" >> ~/.zshrc
+else
+    cat .bash_profile >> ~/.bash_profile
+    cat .bash_profile >> ~/.bashrc
+fi
