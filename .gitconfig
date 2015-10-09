@@ -10,4 +10,4 @@
     co = checkout
     br = branch
 [core]
-    excludesfile = ~/.gitignore
+    excludesfile = ~/.gitignore_global
