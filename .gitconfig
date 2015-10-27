@@ -11,3 +11,4 @@
     br = branch
 [core]
     excludesfile = ~/.gitignore_global
+    quotepath = false
