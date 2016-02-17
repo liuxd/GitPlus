@@ -1,7 +1,7 @@
 Git Plus
 ========
 
-> Configure git automatically.
+Configure your git automatically.
 
 ## Feature
 + Official autocompletion.
@@ -12,4 +12,6 @@ Git Plus
 + Support `zsh`
 
 ## Install
-`git clone git@github.com:liuxd/git-plus.git|sh ./git-plus/install.sh`
+
+  git clone git@github.com:liuxd/git-plus.git|sh ./git-plus/install.sh
+  
