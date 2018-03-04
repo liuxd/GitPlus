@@ -1,8 +1,26 @@
+#git日志
 alias gl='git log --graph --pretty=format:'\''%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset'\'' --abbrev-commit'
+
+#git日志，绝对时间版本。
 alias gll='git log --graph --pretty=format:'\''%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%ci) %C(bold blue)<%an>%Creset'\'' --abbrev-commit'
+
+#清除未跟踪的文件
 alias gc='git clean -df'
+
+#比较最近两次提交的差异
 alias gf='git diff'
+
+#撤销未提交的修改
 alias gr='git reset --hard'
+
+#查看当前版本库的状态
 alias gs='git status'
+
+#查看remote列表
 alias gv='git remote -v'
+
+#取消所有变更
 alias gg='git checkout -'
+
+#强制删除分支
+alias ggd='git branch -D '
