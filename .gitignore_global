@@ -9,3 +9,4 @@ nbproject/
 composer.lock
 package-lock.json
 Icon?
+node_modules/
