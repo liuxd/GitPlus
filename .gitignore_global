@@ -10,3 +10,7 @@ composer.lock
 package-lock.json
 Icon?
 node_modules/
+.obsidian/workspace.json
+.fleet
+.graphql-generated
+_graphql
